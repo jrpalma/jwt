@@ -59,18 +59,12 @@ func TestClaims(test *testing.T) {
 
 }
 
-func TestReservedClaims(test *testing.T) {
+func TestReservedTimeClaims(test *testing.T) {
 	claims := NewClaims()
 	now := time.Now()
 	claims.SetIssuedAt(now)
 	claims.SetExpiration(now)
 	claims.SetNotBefore(now)
-	claims.SetAudience("USA")
-	claims.SetIssuer("iss")
-	claims.SetJTI("jti")
-	claims.SetPrincipal("prn")
-	claims.SetType("typ")
-
 	if t, err := claims.GetIssuedAt(); err != nil {
 		test.Error(err.Error())
 	} else if !t.Equal(now) {
@@ -88,6 +82,15 @@ func TestReservedClaims(test *testing.T) {
 	} else if !t.Equal(now) {
 		test.Errorf("Expected %v, but got %v instead", now, t)
 	}
+
+}
+func TestReservedClaims1(test *testing.T) {
+	claims := NewClaims()
+	claims.SetAudience("USA")
+	claims.SetIssuer("iss")
+	claims.SetJTI("jti")
+	claims.SetPrincipal("prn")
+	claims.SetType("typ")
 
 	if v, err := claims.GetAudience(); err != nil {
 		test.Error(err.Error())
@@ -118,6 +121,15 @@ func TestReservedClaims(test *testing.T) {
 	} else if v != "typ" {
 		test.Errorf("Expected typ to be typ, but got %v instead", v)
 	}
+
+}
+func TestReservedClaims2(test *testing.T) {
+	claims := NewClaims()
+	claims.SetAudience("USA")
+	claims.SetIssuer("iss")
+	claims.SetJTI("jti")
+	claims.SetPrincipal("prn")
+	claims.SetType("typ")
 
 	claims.Set("exp", "invalid date")
 	if _, err := claims.GetExpiration(); err == nil {
