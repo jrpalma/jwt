@@ -5,15 +5,6 @@ import "testing"
 func TestJWT(test *testing.T) {
 	token := NewJWT()
 
-	if !token.Header.Has("typ") {
-		test.Error("Default tokens should have the header field typ")
-	}
-	if !token.Header.Has("alg") {
-		test.Error("Default tokens should have the header field alg")
-	}
-	if !token.Claims.Has("iat") {
-		test.Error("Default tokens should have the iat claim set")
-	}
 	typ := token.Header.Get("typ")
 	if typ != "jwt" {
 		test.Errorf("Expected jwt for typ, but got %v instead", typ)
@@ -42,7 +33,7 @@ func TestJWT(test *testing.T) {
 	}
 
 	token.Header.Set("typ", "invalid")
-	compact, signErr = token.Sign("secret")
+	_, signErr = token.Sign("secret")
 	if signErr == nil {
 		test.Errorf("Failed to sign token: %v", signErr)
 	}
