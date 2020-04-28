@@ -1,20 +1,20 @@
 package jwt
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 )
 
 // Claims represents a JWT claims section.
 type Claims struct {
-	values map[string]string
+	values map[string]interface{}
 }
 
 // NewClaims creates a new JWT Claims object.
 func NewClaims() *Claims {
-	return &Claims{values: make(map[string]string, 0)}
+	return &Claims{values: make(map[string]interface{}, 0)}
 }
 
 // Has returns true if the Claims has value with the given name.
@@ -25,7 +25,7 @@ func (claims *Claims) Has(name string) bool {
 
 // SetExpiration sets the expiration timestamp for the Claims.
 func (claims *Claims) SetExpiration(exp time.Time) {
-	claims.values["exp"] = fmt.Sprintf("%v", exp.UnixNano())
+	claims.values["exp"] = exp.UnixNano()
 }
 
 // GetExpiration gets the expiration timestamp for the Claims.
@@ -37,8 +37,8 @@ func (claims *Claims) GetExpiration() (time.Time, error) {
 	if !exists {
 		return zeroDate, fmt.Errorf(errMsg, "No such value expt")
 	}
-	nsecs, parseError := strconv.ParseInt(value, 10, 64)
-	if parseError != nil {
+	nsecs, validType := value.(int64)
+	if !validType {
 		return zeroDate, fmt.Errorf(errMsg, "Invalid exp value")
 	}
 	return time.Unix(0, nsecs), nil
@@ -46,7 +46,7 @@ func (claims *Claims) GetExpiration() (time.Time, error) {
 
 // SetNotBefore sets the not before timestamp for the Claims.
 func (claims *Claims) SetNotBefore(nbf time.Time) {
-	claims.values["nbf"] = fmt.Sprintf("%v", nbf.UnixNano())
+	claims.values["nbf"] = nbf.UnixNano()
 }
 
 // GetNotBefore gets the not before timestamp for the Claims.
@@ -58,8 +58,8 @@ func (claims *Claims) GetNotBefore() (time.Time, error) {
 	if !exists {
 		return zeroDate, fmt.Errorf(errMsg, "No such value nbf")
 	}
-	nsecs, parseError := strconv.ParseInt(value, 10, 64)
-	if parseError != nil {
+	nsecs, validType := value.(int64)
+	if !validType {
 		return zeroDate, fmt.Errorf(errMsg, "Invalid nbf value")
 	}
 	return time.Unix(0, nsecs), nil
@@ -67,7 +67,7 @@ func (claims *Claims) GetNotBefore() (time.Time, error) {
 
 // SetIssuedAt sets the issued at timestamp for the Claims.
 func (claims *Claims) SetIssuedAt(iat time.Time) {
-	claims.values["iat"] = fmt.Sprintf("%v", iat.UnixNano())
+	claims.values["iat"] = iat.UnixNano()
 }
 
 // GetIssuedAt gets the issued at timestamp for the Claims.
@@ -79,8 +79,8 @@ func (claims *Claims) GetIssuedAt() (time.Time, error) {
 	if !exists {
 		return zeroDate, fmt.Errorf(errMsg, "No such value iat")
 	}
-	nsecs, parseError := strconv.ParseInt(value, 10, 64)
-	if parseError != nil {
+	nsecs, validType := value.(int64)
+	if !validType {
 		return zeroDate, fmt.Errorf(errMsg, "Invalid iat value")
 	}
 	return time.Unix(0, nsecs), nil
@@ -98,7 +98,11 @@ func (claims *Claims) GetIssuer() (string, error) {
 	if !exists {
 		return "", fmt.Errorf(errMsg, "No such value iss")
 	}
-	return value, nil
+	str, validType := value.(string)
+	if !validType {
+		return "", fmt.Errorf(errMsg, "Invalid iss value")
+	}
+	return str, nil
 }
 
 // SetAudience sets the audience for the Claims.
@@ -113,7 +117,11 @@ func (claims *Claims) GetAudience() (string, error) {
 	if !exists {
 		return "", fmt.Errorf(errMsg, "No such value aud")
 	}
-	return value, nil
+	str, validType := value.(string)
+	if !validType {
+		return "", fmt.Errorf(errMsg, "Invalid aud value")
+	}
+	return str, nil
 }
 
 // SetPrincipal sets the principal for the Claims.
@@ -128,7 +136,11 @@ func (claims *Claims) GetPrincipal() (string, error) {
 	if !exists {
 		return "", fmt.Errorf(errMsg, "No such value prn")
 	}
-	return value, nil
+	str, validType := value.(string)
+	if !validType {
+		return "", fmt.Errorf(errMsg, "Invalid prn value")
+	}
+	return str, nil
 }
 
 // SetJTI sets the JWT ID for the Claims.
@@ -143,7 +155,11 @@ func (claims *Claims) GetJTI() (string, error) {
 	if !exists {
 		return "", fmt.Errorf(errMsg, "No such value jti")
 	}
-	return value, nil
+	str, validType := value.(string)
+	if !validType {
+		return "", fmt.Errorf(errMsg, "Invalid jti value")
+	}
+	return str, nil
 }
 
 // SetType sets the type for the Claims.
@@ -158,7 +174,11 @@ func (claims *Claims) GetType() (string, error) {
 	if !exists {
 		return "", fmt.Errorf(errMsg, "No such value typ")
 	}
-	return value, nil
+	str, validType := value.(string)
+	if !validType {
+		return "", fmt.Errorf(errMsg, "Invalid typ value")
+	}
+	return str, nil
 }
 
 // Del Deletes value in the Claims.
@@ -167,23 +187,125 @@ func (claims *Claims) Del(name string) {
 }
 
 // Set sets a value in the Claims
-func (claims *Claims) Set(name string, value string) {
-	claims.values[name] = value
+func (claims *Claims) Set(name string, value interface{}) {
+	//JSON RFC: https://tools.ietf.org/html/rfc7159.html#section-6
+	//HACK: JSON numbers are double or float64 in Go
+	//We will convert any integer to float64 on a set because:
+	//1) Values can be recalled after Set with a GetFloat64
+	//2) Values will be unmarshalled to float64 by the json package
+	//We will do the same with time and []byte
+	switch v := value.(type) {
+	case []byte:
+		claims.values[name] = base64.StdEncoding.EncodeToString(v)
+	case time.Time:
+		claims.values[name] = v.Format(time.RFC3339)
+	case int16:
+		claims.values[name] = float64(v)
+	case uint16:
+		claims.values[name] = float64(v)
+	case int:
+		claims.values[name] = float64(v)
+	case int32:
+		claims.values[name] = float64(v)
+	case uint32:
+		claims.values[name] = float64(v)
+	case int64:
+		claims.values[name] = float64(v)
+	case uint64:
+		claims.values[name] = float64(v)
+	default:
+		claims.values[name] = value
+	}
 }
 
-//Get Gets the value in the Claims given by name.
-func (claims *Claims) Get(name string) string {
+// Get gets the value in the Header given by name.
+func (claims *Claims) Get(name string) (interface{}, bool) {
 	value, exists := claims.values[name]
-	if exists {
-		return value
+	return value, exists
+}
+
+//GetString Gets the string value in the Claims given by name.
+func (claims *Claims) GetString(name string) (string, error) {
+	errMsg := "jwt: Claims.GetString: %v"
+	value, exists := claims.values[name]
+	if !exists {
+		return "", fmt.Errorf(errMsg, "No such value "+name)
 	}
-	return ""
+	str, validType := value.(string)
+	if !validType {
+		return "", fmt.Errorf(errMsg, name+" is not a string value")
+	}
+	return str, nil
+}
+
+//GetBool Gets the bool value in the Claims given by name.
+func (claims *Claims) GetBool(name string) (bool, error) {
+	errMsg := "jwt: Claims.GetBool: %v"
+	value, exists := claims.values[name]
+	if !exists {
+		return false, fmt.Errorf(errMsg, "No such value "+name)
+	}
+	boolVal, validType := value.(bool)
+	if !validType {
+		return false, fmt.Errorf(errMsg, name+" is not a bool value")
+	}
+	return boolVal, nil
+}
+
+//GetBytes Gets a byte slice value in the Claims given by name.
+func (claims *Claims) GetBytes(name string) ([]byte, error) {
+	errMsg := "jwt: Claims.GetBytes: %v"
+	value, exists := claims.values[name]
+	if !exists {
+		return nil, fmt.Errorf(errMsg, "No such value "+name)
+	}
+	str, validType := value.(string)
+	if !validType {
+		return nil, fmt.Errorf(errMsg, name+" is not a string value")
+	}
+	slice, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return nil, fmt.Errorf(errMsg, err)
+	}
+	return slice, nil
+}
+
+//GetFloat64 Gets a float64 value in the Claims given by name.
+func (claims *Claims) GetFloat64(name string) (float64, error) {
+	errMsg := "jwt: Claims.GetFloat64: %v"
+	value, exists := claims.values[name]
+	if !exists {
+		return 0, fmt.Errorf(errMsg, "No such value "+name)
+	}
+	float64Val, validType := value.(float64)
+	if !validType {
+		return 0, fmt.Errorf(errMsg, name+" is not a float64 value")
+	}
+	return float64Val, nil
+}
+
+//GetTime Gets a time value in the Claims given by name.
+func (claims *Claims) GetTime(name string) (time.Time, error) {
+	errMsg := "jwt: Claims.GetTime: %v"
+	value, exists := claims.values[name]
+	if !exists {
+		return time.Time{}, fmt.Errorf(errMsg, "No such value "+name)
+	}
+	str, validType := value.(string)
+	if !validType {
+		return time.Time{}, fmt.Errorf(errMsg, name+" is not a string value")
+	}
+	timeVal, err := time.Parse(time.RFC3339, str)
+	if err != nil {
+		return time.Time{}, fmt.Errorf(errMsg, err)
+	}
+	return timeVal, nil
 }
 
 // Keys gets the names of all the values in the Claims.
 func (claims *Claims) Keys() []string {
 	keys := make([]string, 0, len(claims.values))
-	for _, key := range claims.values {
+	for key := range claims.values {
 		keys = append(keys, key)
 	}
 	return keys
