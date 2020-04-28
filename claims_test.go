@@ -24,11 +24,19 @@ func TestClaims(test *testing.T) {
 	if !claims.Has("sub") {
 		test.Error("Expected to have value sub, but it does not")
 	}
-	if claims.Get("iss") != "jwt" {
-		test.Errorf("Expected iss to be jwt, but got %v instead", claims.Get("iss"))
+	str, err := claims.GetString("iss")
+	if err != nil {
+		test.Error(err.Error())
 	}
-	if claims.Get("sub") != "TestToken" {
-		test.Errorf("Expected sub to be TestToken, but got %v instead", claims.Get("iss"))
+	if str != "jwt" {
+		test.Errorf("Expected iss to be jwt, but got %v instead", str)
+	}
+	str, err = claims.GetString("sub")
+	if err != nil {
+		test.Error(err.Error())
+	}
+	if str != "TestToken" {
+		test.Errorf("Expected sub to be TestToken, but got %v instead", str)
 	}
 	keys := claims.Keys()
 	if len(keys) != 2 {
@@ -177,11 +185,165 @@ func TestReservedClaims2(test *testing.T) {
 	if _, err := claims.GetType(); err == nil {
 		test.Error("GetType should have failed with missing typ field.")
 	}
-	if v := claims.Get("bogus"); v != "" {
+	_, err := claims.GetString("bogus")
+	if err == nil {
 		test.Error("Get should have failed with invalid field.")
 	}
 
 	if err := claims.Unmarshal([]byte("invalid JSON")); err == nil {
 		test.Error("Unmarshal should have failed with invalid JSON.")
+	}
+}
+func TestClaimTypes(test *testing.T) {
+	claims := NewClaims()
+	now := time.Now()
+	f := float64(3.14)
+	i16 := int16(-1)
+	ui16 := uint16(1)
+	i32 := int32(-1)
+	ui32 := uint32(1)
+	i64 := int64(-1)
+	ui64 := uint64(1)
+	i := int(-1)
+	str := "str"
+	b := false
+
+	claims.Set("now", now)
+	claims.Set("float64", f)
+	claims.Set("int", i)
+	claims.Set("str", str)
+	claims.Set("bool", b)
+	claims.Set("int16", i16)
+	claims.Set("uint16", ui16)
+	claims.Set("int32", i32)
+	claims.Set("uint32", ui32)
+	claims.Set("int64", i64)
+	claims.Set("uint64", ui64)
+	claims.Set("bytes", []byte{1, 2, 3})
+
+	if _, err := claims.GetTime("now"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("float64"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("int"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetString("str"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetBool("bool"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("int16"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("uint16"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("int32"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("uint32"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("int64"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetFloat64("uint64"); err != nil {
+		test.Errorf(err.Error())
+	}
+	if _, err := claims.GetBytes("bytes"); err != nil {
+		test.Errorf(err.Error())
+	}
+
+}
+func TestNonExistingClaims1(test *testing.T) {
+	claims := NewClaims()
+
+	if _, ok := claims.Get("unknown"); ok {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetTime("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetString("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetBool("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetBytes("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+
+}
+func TestNonExistingClaims2(test *testing.T) {
+	claims := NewClaims()
+	claims.Set("unknown", nil)
+
+	if _, ok := claims.Get("unknown"); !ok {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetTime("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetString("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetBool("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetFloat64("unknown"); err == nil {
+		test.Errorf("Should fail")
+	}
+	if _, err := claims.GetBytes("unknown"); err == nil {
+		test.Errorf("Should fail")
 	}
 }
