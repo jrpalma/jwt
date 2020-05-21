@@ -39,15 +39,15 @@ func (jwt *JWT) Sign(secret string) (string, error) {
 		return "", fmt.Errorf(errMsg, claimsErr)
 	}
 
-	headerBase64 := base64.StdEncoding.EncodeToString(headerJSON)
-	claimsBase64 := base64.StdEncoding.EncodeToString(claimsJSON)
+	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
+	claimsBase64 := base64.RawURLEncoding.EncodeToString(claimsJSON)
 	serializedJWT := headerBase64 + "." + claimsBase64
 
 	key := []byte(secret)
 	hs256 := hmac.New(sha256.New, key)
 	hs256.Write([]byte(serializedJWT))
 
-	value := serializedJWT + "." + base64.StdEncoding.EncodeToString(hs256.Sum(nil))
+	value := serializedJWT + "." + base64.RawURLEncoding.EncodeToString(hs256.Sum(nil))
 
 	return value, nil
 }
@@ -60,17 +60,17 @@ func (jwt *JWT) Verify(compact string, secret string) error {
 	if len(tokens) != 3 {
 		return fmt.Errorf(errMsg, "Invalid JWT")
 	}
-	decodedSig, decodedSigErr := base64.StdEncoding.DecodeString(string(tokens[2]))
+	decodedSig, decodedSigErr := base64.RawURLEncoding.DecodeString(string(tokens[2]))
 	if decodedSigErr != nil {
 		return fmt.Errorf(errMsg, "Invalid signature")
 	}
 
-	headerJSON, decodeHeaderErr := base64.StdEncoding.DecodeString(string(tokens[0]))
+	headerJSON, decodeHeaderErr := base64.RawURLEncoding.DecodeString(string(tokens[0]))
 	if decodeHeaderErr != nil {
 		return fmt.Errorf(errMsg, "Invalid header")
 	}
 
-	claimsJSON, decodeClaimsErr := base64.StdEncoding.DecodeString(string(tokens[1]))
+	claimsJSON, decodeClaimsErr := base64.RawURLEncoding.DecodeString(string(tokens[1]))
 	if decodeClaimsErr != nil {
 		return fmt.Errorf(errMsg, "Invalid claims")
 	}

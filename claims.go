@@ -196,7 +196,7 @@ func (claims *Claims) Set(name string, value interface{}) {
 	//We will do the same with time and []byte
 	switch v := value.(type) {
 	case []byte:
-		claims.values[name] = base64.StdEncoding.EncodeToString(v)
+		claims.values[name] = base64.RawURLEncoding.EncodeToString(v)
 	case time.Time:
 		claims.values[name] = v.Format(time.RFC3339)
 	case int16:
@@ -263,7 +263,7 @@ func (claims *Claims) GetBytes(name string) ([]byte, error) {
 	if !validType {
 		return nil, fmt.Errorf(errMsg, name+" is not a string value")
 	}
-	slice, err := base64.StdEncoding.DecodeString(str)
+	slice, err := base64.RawURLEncoding.DecodeString(str)
 	if err != nil {
 		return nil, fmt.Errorf(errMsg, err)
 	}
